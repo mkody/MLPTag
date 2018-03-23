@@ -2,11 +2,13 @@ import os
 import json
 import twitter
 
+from time import sleep
 from derpibooru import Search
 
 # Current dir and instanciate values
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 pastPosts = []
+t = None
 config = {
     'derpi': '',
     'twitter': {
@@ -16,6 +18,25 @@ config = {
         'tokenSecret': ''
     }
 }
+
+
+def postT(m, u, i):
+    global pastPosts, t
+    # Post to Twitter
+    t.PostUpdate(m, media=u)
+    # Add id to past ids
+    pastPosts.append(i)
+    # Log
+    print('Posted #' + str(post.id))
+    sleep(3)
+
+
+def err(i, e, a):
+    # Display error
+    print('Error #' + str(i) + ': ' + str(e))
+    if a:
+        print('^ image size: ' + a)
+
 
 # Create config file if it doesn't exists
 if not os.path.isfile(os.path.join(THIS_DIR, 'config.json')):
@@ -89,7 +110,7 @@ for post in Search().key(config['derpi']).query('my:watched'):
             prefix += ' (' + ', '.join(eps) + ')'
 
         # Make text message
-        msg = '{} \n#{} https://derpibooru.org/{}'.format(prefix, post.id, post.id)
+        msg = '{} \n#{} {}'.format(prefix, post.id, post.url)
 
         # Add media - if it's a webm, we will need the mp4 version of it
         mediaURL = post.image
@@ -97,14 +118,37 @@ for post in Search().key(config['derpi']).query('my:watched'):
             mediaURL = post.representations['mp4']
 
         try:
-            # Post to Twitter
-            print('Posting: ' + msg + '\n')
-            t.PostUpdate(msg, media=mediaURL)
-            # Add id to past ids
-            pastPosts.append(post.id)
-        except:
-            print('Something went wrong when posting #' + str(post.id))
+            postT(msg, mediaURL, post.id)
+        except twitter.error.TwitterError as e:
+            try:
+                if e.message['message'] == 'Images must be less than 5MB.':
+                    # Try a smaller picture
+                    postT(msg, post.tall, post.id)
+                else:
+                    err(post.id, e, 'full')
+            except twitter.error.TwitterError as e:
+                try:
+                    if e.message['message'] == 'Images must be less than 5MB.':
+                        # Try an even smaller picture
+                        postT(msg, post.small, post.id)
+                    else:
+                        err(post.id, e, 'tall')
+                except twitter.error.TwitterError as e:
+                    try:
+                        if e.message['message'] == 'Images must be less than 5MB.':
+                            # Try thumb
+                            postT(msg, post.thumb, post.id)
+                        else:
+                            err(post.id, e, 'small')
+                    except Exception as e:
+                        err(post.id, e, 'thumb')
+                except Exception as e:
+                    err(post.id, e, 'small')
+            except Exception as e:
+                err(post.id, e, 'large')
+        except Exception as e:
+            err(post.id, e, 'full')
 
 # Save our past ids
 with open(os.path.join(THIS_DIR, 'past.json'), 'w') as f:
-    f.write(json.dumps(pastPosts[-50:]))  # Save last 50 elements
+    f.write(json.dumps(pastPosts[-200:]))  # Save last 200 elements
