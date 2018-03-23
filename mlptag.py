@@ -1,11 +1,10 @@
 import os
 import json
 import twitter
-
 from time import sleep
 from derpibooru import Search
 
-# Current dir and instanciate values
+# Current dir and init values
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 pastPosts = []
 t = None
@@ -20,22 +19,21 @@ config = {
 }
 
 
-def postT(m, u, i):
+# Send media
+def postT(msg, image, id):
     global pastPosts, t
     # Post to Twitter
-    t.PostUpdate(m, media=u)
+    t.PostUpdate(msg, media=image)
     # Add id to past ids
-    pastPosts.append(i)
+    pastPosts.append(id)
     # Log
-    print('Posted #' + str(post.id))
+    print('Posted #' + str(id))
     sleep(3)
 
 
-def err(i, e, a):
-    # Display error
-    print('Error #' + str(i) + ': ' + str(e))
-    if a:
-        print('^ image size: ' + a)
+# Display error message
+def err(id, err, size):
+    print('Error #' + str(id) + ' on ' + size + ': ' + str(err))
 
 
 # Create config file if it doesn't exists
@@ -46,7 +44,6 @@ if not os.path.isfile(os.path.join(THIS_DIR, 'config.json')):
     print('A config.json file has been created.')
     print('Please fill the values before running again.')
     exit(2)
-
 
 # Load config file
 with open(os.path.join(THIS_DIR, 'config.json')) as d:
