@@ -10,7 +10,7 @@ venv/
 ENV/
 
 # our files
+mlptag.lock
 config.json
 past.json
 cron.log
-

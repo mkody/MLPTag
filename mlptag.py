@@ -36,6 +36,12 @@ def err(id, err, size):
     print('Error #' + str(id) + ' on ' + size + ': ' + str(err))
 
 
+# Stop if there's a lock file or create it
+if os.path.isfile(os.path.join(THIS_DIR, 'mlptag.lock')):
+    exit(0)
+else:
+    open(os.path.join(THIS_DIR, 'mlptag.lock'), 'a').close()
+
 # Create config file if it doesn't exists
 if not os.path.isfile(os.path.join(THIS_DIR, 'config.json')):
     with open(os.path.join(THIS_DIR, 'config.json'), 'w') as f:
@@ -118,21 +124,21 @@ for post in Search().key(config['derpi']).query('my:watched'):
             postT(msg, mediaURL, post.id)
         except twitter.error.TwitterError as e:
             try:
-                if e.message['message'] == 'Images must be less than 5MB.':
+                if 'Images must be less than 5MB.' in str(e):
                     # Try a smaller picture
                     postT(msg, post.tall, post.id)
                 else:
                     err(post.id, e, 'full')
             except twitter.error.TwitterError as e:
                 try:
-                    if e.message['message'] == 'Images must be less than 5MB.':
+                    if 'Images must be less than 5MB.' in str(e):
                         # Try an even smaller picture
                         postT(msg, post.small, post.id)
                     else:
                         err(post.id, e, 'tall')
                 except twitter.error.TwitterError as e:
                     try:
-                        if e.message['message'] == 'Images must be less than 5MB.':
+                        if 'Images must be less than 5MB.' in str(e):
                             # Try thumb
                             postT(msg, post.thumb, post.id)
                         else:
@@ -149,3 +155,6 @@ for post in Search().key(config['derpi']).query('my:watched'):
 # Save our past ids
 with open(os.path.join(THIS_DIR, 'past.json'), 'w') as f:
     f.write(json.dumps(pastPosts[-200:]))  # Save last 200 elements
+
+# Delete lock
+os.remove(os.path.join(THIS_DIR, 'mlptag.lock'))
