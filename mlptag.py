@@ -27,7 +27,8 @@ def postT(msg, image, id):
     # Add id to past ids
     pastPosts.append(id)
     # Log
-    print('Posted #' + str(id))
+    # print('Posted #' + str(id))
+    # Wait a bit to prevent hard ratelimit
     sleep(3)
 
 
