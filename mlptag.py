@@ -3,6 +3,7 @@ import json
 import twitter
 from time import sleep
 from derpibooru import Search
+from datetime import datetime, timedelta
 
 # Current dir and init values
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -79,7 +80,8 @@ t = twitter.Api(consumer_key=config['twitter']['key'],
                 access_token_secret=config['twitter']['tokenSecret'])
 
 # Looks for our watched list posts
-for post in Search().key(config['derpi']).query('my:watched'):
+dt_delay = datetime.utcnow() - timedelta(minutes=30)
+for post in Search().key(config['derpi']).query('my:watched, %s' % dt_delay.strftime("%Y-%m-%d %H:%MZ")):
     # If the post is rendered and not already in our past ids
     if (post.is_rendered and post.id not in pastPosts):
         # Add hashtags
